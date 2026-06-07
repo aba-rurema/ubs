@@ -6,6 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record MailProperties(
 		boolean enabled,
 		String from,
-		String fromName
+		String fromName,
+		String devRedirectTo,
+		java.util.List<String> devRedirectDomains
 ) {
 }

@@ -35,6 +35,21 @@ public class NotificationDeliveryService {
 	}
 
 	@Transactional
+	public void sendEmailForNotification(Notification notification) {
+		String recipient = notification.getCustomer().getEmail();
+		String body = """
+				Dear %s,
+
+				%s
+
+				—
+				Utility Billing System
+				""".formatted(notification.getCustomer().getFullNames(), notification.getMessage());
+
+		emailService.sendPlainText(recipient, notification.getTitle(), body);
+	}
+
+	@Transactional
 	public void deliverNotification(Notification notification) {
 		if (notification.getStatus() != NotificationStatus.PENDING) {
 			return;
@@ -53,17 +68,7 @@ public class NotificationDeliveryService {
 	}
 
 	private void sendEmail(Notification notification) {
-		String recipient = notification.getCustomer().getEmail();
-		String body = """
-				Dear %s,
-
-				%s
-
-				—
-				Utility Billing System
-				""".formatted(notification.getCustomer().getFullNames(), notification.getMessage());
-
-		emailService.sendPlainText(recipient, notification.getTitle(), body);
+		sendEmailForNotification(notification);
 		markSent(notification);
 	}
 

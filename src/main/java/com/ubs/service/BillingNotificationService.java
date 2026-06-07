@@ -2,7 +2,6 @@ package com.ubs.service;
 
 import com.ubs.entity.Bill;
 import com.ubs.entity.Customer;
-import com.ubs.entity.NotificationChannel;
 import com.ubs.entity.NotificationType;
 import com.ubs.entity.Payment;
 import org.springframework.stereotype.Service;
@@ -29,8 +28,7 @@ public class BillingNotificationService {
 				"Your " + meterLabel + " bill " + bill.getBillNumber()
 						+ " for " + period + " has been approved. Amount due: "
 						+ formatAmount(bill.getTotalAmount()) + ". Due date: " + bill.getDueDate() + ".",
-				NotificationType.BILL_APPROVED,
-				NotificationChannel.EMAIL
+				NotificationType.BILL_APPROVED
 		);
 	}
 
@@ -42,23 +40,37 @@ public class BillingNotificationService {
 				"Payment Received - Bill Paid",
 				"Payment of " + formatAmount(payment.getAmount()) + " received for bill "
 						+ bill.getBillNumber() + ". Your bill is now fully paid. Thank you.",
-				NotificationType.PAYMENT_CONFIRMATION,
-				NotificationChannel.EMAIL
+				NotificationType.PAYMENT_CONFIRMATION
 		);
 	}
 
-	public void notifyOverdue(Bill bill) {
+	public void notifyPartialPaymentReceived(Bill bill, Payment payment, BigDecimal remainingBalance) {
 		Customer customer = bill.getCustomer();
-		String period = formatPeriod(bill.getBillingMonth(), bill.getBillingYear());
 
 		notificationService.createSystemNotification(
 				customer,
-				"Overdue Bill - " + period,
-				"Your bill " + bill.getBillNumber() + " for " + period
-						+ " is overdue. Outstanding balance: " + formatAmount(bill.getBalance())
-						+ ". A penalty has been applied per your tariff.",
-				NotificationType.OVERDUE_NOTICE,
-				NotificationChannel.EMAIL
+				"Partial Payment Received - " + bill.getBillNumber(),
+				"Payment of " + formatAmount(payment.getAmount()) + " received for bill "
+						+ bill.getBillNumber() + ". Remaining balance: "
+						+ formatAmount(remainingBalance) + ". Please pay the outstanding amount by "
+						+ bill.getDueDate() + ".",
+				NotificationType.PAYMENT_CONFIRMATION
+		);
+	}
+
+	public void notifyPenaltyApplied(Bill bill, BigDecimal penaltyAmount, String reason) {
+		if (penaltyAmount == null || penaltyAmount.compareTo(BigDecimal.ZERO) <= 0) {
+			return;
+		}
+
+		Customer customer = bill.getCustomer();
+		notificationService.createSystemNotification(
+				customer,
+				"Late Payment Penalty Applied - " + bill.getBillNumber(),
+				"A late payment penalty of " + formatAmount(penaltyAmount) + " has been applied "
+						+ reason + ". Bill: " + bill.getBillNumber()
+						+ ". Updated outstanding balance: " + formatAmount(bill.getBalance()) + ".",
+				NotificationType.OVERDUE_NOTICE
 		);
 	}
 

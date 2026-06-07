@@ -12,6 +12,8 @@ import com.ubs.exception.BusinessRuleViolationException;
 import com.ubs.exception.ResourceNotFoundException;
 import com.ubs.repository.CustomerRepository;
 import com.ubs.repository.NotificationRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,8 @@ import java.time.Instant;
 
 @Service
 public class NotificationService {
+
+	private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
 	private final NotificationRepository notificationRepository;
 	private final CustomerRepository customerRepository;
@@ -54,26 +58,45 @@ public class NotificationService {
 	public void createSystemNotification(Customer customer,
 										 String title,
 										 String message,
-										 NotificationType notificationType,
-										 NotificationChannel channel) {
+										 NotificationType notificationType) {
+		Instant now = Instant.now();
 		Notification notification = Notification.builder()
 				.customer(customer)
-				.title(title)
-				.message(message)
+				.title(title.trim())
+				.message(message.trim())
 				.notificationType(notificationType)
-				.channel(channel)
-				.status(NotificationStatus.PENDING)
+				.channel(NotificationChannel.IN_APP)
+				.status(NotificationStatus.SENT)
+				.sentAt(now)
 				.build();
 
-		deliverAfterSave(notificationRepository.save(notification));
+		notificationRepository.save(notification);
+		sendEmailCopy(notification);
 	}
 
 	private NotificationResponse deliverAfterSave(Notification notification) {
 		if (notification.getChannel() == NotificationChannel.EMAIL) {
 			notificationDeliveryService.deliver(notification.getId());
 			notification = notificationRepository.findById(notification.getId()).orElse(notification);
+			return toResponse(notification);
 		}
+
+		if (notification.getChannel() == NotificationChannel.IN_APP) {
+			notification.setStatus(NotificationStatus.SENT);
+			notification.setSentAt(Instant.now());
+			notification = notificationRepository.save(notification);
+			sendEmailCopy(notification);
+		}
+
 		return toResponse(notification);
+	}
+
+	private void sendEmailCopy(Notification notification) {
+		try {
+			notificationDeliveryService.sendEmailForNotification(notification);
+		} catch (Exception ex) {
+			log.warn("Saved notification {} but email delivery failed: {}", notification.getId(), ex.getMessage());
+		}
 	}
 
 	@Transactional

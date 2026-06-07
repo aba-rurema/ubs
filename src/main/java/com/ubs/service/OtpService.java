@@ -13,6 +13,8 @@ import com.ubs.entity.OtpPurpose;
 import com.ubs.entity.User;
 import com.ubs.exception.BusinessRuleViolationException;
 import com.ubs.repository.OtpChallengeRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 @Service
 public class OtpService {
 
+	private static final Logger log = LoggerFactory.getLogger(OtpService.class);
 	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
 	private final OtpChallengeRepository otpChallengeRepository;
@@ -110,6 +113,7 @@ public class OtpService {
 		OtpChallenge saved = otpChallengeRepository.save(challenge);
 
 		sendOtpEmail(email, otpCode, purpose);
+		logDevOtp(email, purpose, saved.getId(), otpCode);
 
 		String action = purpose == OtpPurpose.LOGIN ? "sign in" : "complete your registration";
 		return new OtpChallengeResponse(
@@ -126,6 +130,14 @@ public class OtpService {
 		if (userId != null) {
 			otpChallengeRepository.invalidateActiveByUserAndPurpose(userId, purpose);
 		}
+	}
+
+	private void logDevOtp(String email, OtpPurpose purpose, Long sessionId, String otpCode) {
+		if (mailProperties.enabled()) {
+			return;
+		}
+		log.warn("[DEV OTP] purpose={} email={} sessionId={} code={} — paste code into verify-otp (mail disabled)",
+				purpose, email, sessionId, otpCode);
 	}
 
 	private void sendOtpEmail(String email, String otpCode, OtpPurpose purpose) {

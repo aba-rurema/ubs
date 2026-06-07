@@ -113,6 +113,13 @@ public class BillService {
 		bill.setStatus(BillStatus.APPROVED);
 		Bill savedBill = billRepository.save(bill);
 		billingNotificationService.notifyBillApproved(savedBill);
+		if (savedBill.getPenaltyAmount().compareTo(ZERO) > 0) {
+			String period = formatPeriod(savedBill.getBillingMonth(), savedBill.getBillingYear());
+			billingNotificationService.notifyPenaltyApplied(
+					savedBill,
+					savedBill.getPenaltyAmount(),
+					"on your new bill for " + period + " because you have other overdue bills");
+		}
 
 		return toResponse(savedBill);
 	}
@@ -174,8 +181,18 @@ public class BillService {
 			bill.setStatus(BillStatus.OVERDUE);
 
 			Bill savedBill = billRepository.save(bill);
-			billingNotificationService.notifyOverdue(savedBill);
+			if (penalty.compareTo(ZERO) > 0) {
+				billingNotificationService.notifyPenaltyApplied(
+						savedBill,
+						penalty,
+						"because bill " + savedBill.getBillNumber() + " passed the due date ("
+								+ savedBill.getDueDate() + ")");
+			}
 		}
+	}
+
+	private String formatPeriod(int month, int year) {
+		return String.format("%02d/%d", month, year);
 	}
 
 	private BillCalculation calculateBillAmounts(MeterReading reading, Customer customer) {

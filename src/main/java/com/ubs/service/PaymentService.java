@@ -78,6 +78,8 @@ public class PaymentService {
 
 		if (bill.getStatus() == BillStatus.PAID) {
 			billingNotificationService.notifyPaymentConfirmed(bill, savedPayment);
+		} else {
+			billingNotificationService.notifyPartialPaymentReceived(bill, savedPayment, balanceAfter);
 		}
 
 		return toResponse(savedPayment);

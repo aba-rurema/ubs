@@ -43,7 +43,7 @@ public class SecurityConfig {
 												   DaoAuthenticationProvider authenticationProvider) throws Exception {
 		return http
 				.csrf(AbstractHttpConfigurer::disable)
-				.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+				.headers(headers -> headers.frameOptions(frame -> frame.deny()))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider)
 				.authorizeHttpRequests(auth -> auth
@@ -58,8 +58,7 @@ public class SecurityConfig {
 								"/v3/api-docs/**",
 								"/api-docs/**",
 								"/swagger-ui/**",
-								"/swagger-ui.html",
-								"/h2-console/**"
+								"/swagger-ui.html"
 						).permitAll()
 						.requestMatchers("/auth/**").authenticated()
 						.anyRequest().authenticated())

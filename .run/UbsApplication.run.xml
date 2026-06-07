@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="UbsApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="ubs" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.ubs.UbsApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
